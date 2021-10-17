@@ -16,129 +16,120 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup, echo=FALSE}
+```{r setup, echo=FALSE, fig.width=11.693, fig.height=8.268}
 
-library(activelearning)
 library(dplyr)
-library(caret)
 library(ggplot2)
-library(sits)
-
-sits_method <- sits::sits_xgboost(verbose = FALSE)
-
-# Get samples of deforestation.
-samples_tb <- system.file("extdata/samples.rds",
-                          package = "activelearning") %>%
-  readRDS() %>% 
-  dplyr::group_by(label) %>%
-  dplyr::sample_frac(size = 0.1) %>% 
-  dplyr::ungroup() %>% 
-  magrittr::set_class(class(sits::cerrado_2classes))
- 
-# Initial number of labels to be taken from each label.
-n_labelled   <- 3
-
-# Number of labels to be selected on each iteration.
-n_samples    <- length(unique(samples_tb$label)) * 3
-
-# Number of consecutive iterations.
-n_iterations <- 30 
-
-# Number of times the experiment is repeated.
-n_experiments <- 30 
-
-source("comparison_deforestation_util.R")
-
-```
 
 
 
-## Test Active Learning using only known samples.
+# Set up
+# Load data from results.
+results_lst <- system.file("extdata", "compare_methods_results", "results.rds",
+                            package = "activelearning") %>% 
+  readRDS()
 
-```{r run_experiments, echo=FALSE}
+acc_no_al <- results_lst %>%
+  magrittr::extract2("no_active_learning") %>% 
+    purrr::map(.f = function(x){
+        return(x[["accuracy"]])
+    }) %>%
+    magrittr::set_names(seq_len(length(.))) %>%
+    dplyr::bind_rows(.id = "experiment") %>%
+    dplyr::mutate(type = "No Active Learning")
 
-acc_no_al <- lapply(seq_len(n_experiments), 
-                    FUN = function(x, samples_tb, sits_method, n_iterations,
-                                   n_samples) {
-         experiment(start_samples_tb = start_sample_set(samples_tb = samples_tb, 
-                                                        n_samples = n_samples), 
-                    sits_method = sits_method, 
-                    n_iterations = n_iterations,
-                    n_samples = n_samples,
-                    f_new_samples = new_samples_no_al) %>% 
-                        dplyr::mutate(type = "No Active Learning") %>% 
-                        return()
-                    },
-         samples_tb = samples_tb,
-         sits_method = sits_method,
-         n_iterations = n_iterations,
-         n_samples = n_samples)
+acc_egal <- results_lst %>%
+  magrittr::extract2("egal") %>% 
+    purrr::map(.f = function(x){
+        return(x[["accuracy"]])
+    }) %>%
+    magrittr::set_names(seq_len(length(.))) %>%
+    dplyr::bind_rows(.id = "experiment") %>%
+    dplyr::mutate(type = "EGAL")
 
-acc_egal  <- lapply(seq_len(n_experiments), 
-                    FUN = function(x, samples_tb, sits_method, n_iterations,
-                                   n_samples) {
-         experiment(start_samples_tb = start_sample_set(samples_tb = samples_tb, 
-                                                        n_samples = n_samples), 
-                    sits_method = sits_method, 
-                    n_iterations = n_iterations,
-                    n_samples = n_samples,
-                    f_new_samples = new_samples_egal) %>% 
-                        dplyr::mutate(type = "EGAL") %>% 
-                        return()
-                    },
-         samples_tb = samples_tb,
-         sits_method = sits_method,
-         n_iterations = n_iterations,
-         n_samples = n_samples)
+acc_rs <- results_lst %>%
+  magrittr::extract2("al_rand_sampling") %>% 
+    purrr::map(.f = function(x){
+        return(x[["accuracy"]])
+    }) %>%
+    magrittr::set_names(seq_len(length(.))) %>%
+    dplyr::bind_rows(.id = "experiment") %>%
+    dplyr::mutate(type = "AL Random Sampling")
 
-acc_rs    <- lapply(seq_len(n_experiments), 
-                    FUN = function(x, samples_tb, sits_method, n_iterations,
-                                   n_samples) {
-         experiment(start_samples_tb = start_sample_set(samples_tb = samples_tb, 
-                                                        n_samples = n_samples), 
-                    sits_method = sits_method, 
-                    n_iterations = n_iterations,
-                    n_samples = n_samples,
-                    f_new_samples = new_samples_rs) %>% 
-                        dplyr::mutate(type = "AL random sampling") %>% 
-                        return()
-                    },
-         samples_tb = samples_tb,
-         sits_method = sits_method,
-         n_iterations = n_iterations,
-         n_samples = n_samples)
+plot_data <-  dplyr::bind_rows(acc_no_al, acc_egal, acc_rs) %>%
+    dplyr::mutate(experiment = as.integer(experiment)) %>%
+    dplyr::select(type, experiment, iteration,
+                  n_training, metric, class, accuracy)
 
-acc_no_al <- acc_no_al %>% 
-  dplyr::bind_rows()
-acc_egal <- acc_egal %>%
-  dplyr::bind_rows()
-acc_rs <- acc_rs %>%
-  dplyr::bind_rows()
+n_experiments <- plot_data %>%
+  dplyr::pull(experiment) %>%
+  unique() %>%
+  length()
 
-# TODO: Add test for s2.
+n_iterations <- plot_data %>%
+  dplyr::pull(iteration) %>%
+  unique() %>%
+  length()
 
 
-```
+plot_f1 <- plot_data %>%
+    dplyr::filter(metric == "f1") %>%
+    ggplot2::ggplot() +
+    ggplot2::geom_boxplot(ggplot2::aes(x = n_training,
+                                       y = accuracy,
+                                       group = n_training)) +
+    ggplot2::facet_grid(cols = dplyr::vars(type),
+                        rows = dplyr::vars(class)) +
+    ggplot2::labs(title = "Active learning accuracy",
+                  subtitle = paste(
+                      "Amazonia samples",
+                      paste(n_experiments, " runs"),
+                      paste(n_iterations, " iterations"),
+                      sep = " - "
+                  )) +
+    ggplot2::xlab("Number of training samples") +
+    ggplot2::ylab("F1 score")
+print(plot_f1)
 
+plot_mean_overall <- plot_data %>%
+    dplyr::filter(metric %in% "accuracy") %>%
+    dplyr::group_by(type, n_training, metric) %>%
+    dplyr::summarize(mean_acc = mean(accuracy)) %>%
+    dplyr::ungroup() %>%
+    ggplot2::ggplot() +
+    ggplot2::geom_path(ggplot2::aes(x = n_training,
+                                    y = mean_acc,
+                                    color = type)) +
+    ggplot2::labs(title = "Active learning accuracy",
+                  subtitle = paste(
+                      "Amazonia samples",
+                      paste(n_experiments, " runs"),
+                      paste(n_iterations, " iterations"),
+                      sep = " - "
+                  )) +
+    ggplot2::xlab("Number of training samples") +
+    ggplot2::ylab("Mean overall accuracy")
+print(plot_mean_overall)
 
-
-```{r plot, echo=FALSE, fig.width=11.693, fig.height=8.268}
-
-dplyr::bind_rows(acc_no_al, acc_egal, acc_rs) %>%
-  dplyr::filter(metric == "f1") %>%
-  ggplot2::ggplot() + 
-  ggplot2::geom_boxplot(ggplot2::aes(x = n_samples,
-                                     y = accuracy,
-                                     group = n_training)) +
-  ggplot2::facet_grid(cols = dplyr::vars(class),
-                      rows = dplyr::vars(type)) +
-  ggplot2::labs(title = "Active learning accuracy",
-                subtitle = paste("Amazonia samples",
-                                 paste(n_experiments, " runs"),
-                                 paste(n_iterations, " iterations"),
-                                 sep = " - ")) +
-  ggplot2::xlab("Number of training samples") + 
-  ggplot2::ylab("F1 score")
-
-```
-
+plot_mean_pu <- plot_data %>%
+    dplyr::filter(metric %in% c("f1", "prod_acc", "user_acc")) %>%
+    dplyr::group_by(type, n_training, metric, class) %>%
+    dplyr::summarize(mean_acc = mean(accuracy)) %>%
+    dplyr::ungroup() %>%
+    ggplot2::ggplot() +
+    ggplot2::geom_path(ggplot2::aes(x = n_training,
+                                    y = mean_acc,
+                                    group = class,
+                                    color = class)) +
+    ggplot2::facet_grid(cols = dplyr::vars(type),
+                        rows = dplyr::vars(metric)) +
+    ggplot2::labs(title = "Active learning accuracy",
+                  subtitle = paste(
+                      "Amazonia samples",
+                      paste(n_experiments, " runs"),
+                      paste(n_iterations, " iterations"),
+                      sep = " - "
+                  )) +
+    ggplot2::xlab("Number of training samples") +
+    ggplot2::ylab("Mean accuracy")
+print(plot_mean_pu)
