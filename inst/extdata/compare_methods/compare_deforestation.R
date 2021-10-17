@@ -16,9 +16,9 @@ source(system.file("extdata", "compare_methods", "compare_al_methods.R",
 samples_tb <- system.file("extdata", "samples", "deforestation.rds",
                           package = "activelearning") %>%
     readRDS() %>%
-    dplyr::group_by(label) %>%
-    dplyr::slice_sample(prop = 0.2) %>%
-    dplyr::ungroup() %>%
+    # dplyr::group_by(label) %>%
+    # dplyr::slice_sample(prop = 0.2) %>%
+    # dplyr::ungroup() %>%
     magrittr::set_class(class(sits::cerrado_2classes))
 stopifnot(nrow(samples_tb) > 0)
 
@@ -40,10 +40,10 @@ n_labelled   <- 3
 n_samples    <- length(unique(samples_tb$label)) * 3
 
 # Number of consecutive iterations.
-n_iterations <- 3
+n_iterations <- 30
 
 # Number of times the experiment is repeated.
-n_experiments <- 3
+n_experiments <- 30
 
 
 
@@ -149,7 +149,7 @@ plot_data <-  dplyr::bind_rows(acc_no_al, acc_egal, acc_rs) %>%
 saveRDS(plot_data,
         file = file.path(results_dir, "plot_data.rds"))
 
-my_plot <- plot_data %>%
+plot_f1 <- plot_data %>%
     dplyr::filter(metric == "f1") %>%
     ggplot2::ggplot() +
     ggplot2::geom_boxplot(ggplot2::aes(x = n_training,
@@ -168,9 +168,68 @@ my_plot <- plot_data %>%
     ggplot2::ylab("F1 score")
 
 ggplot2::ggsave(
-    plot = my_plot,
+    plot = plot_f1,
     path = results_dir,
     filename = "compare_deforestation.png",
+    device = "png",
+    width = 297,
+    height = 210,
+    units = "mm")
+
+plot_mean_overall <- plot_data %>%
+    dplyr::filter(metric %in% "accuracy") %>%
+    dplyr::group_by(type, n_training, metric) %>%
+    dplyr::summarize(mean_acc = mean(accuracy)) %>%
+    dplyr::ungroup() %>%
+    ggplot2::ggplot() +
+    ggplot2::geom_path(ggplot2::aes(x = n_training,
+                                    y = mean_acc,
+                                    color = type)) +
+    ggplot2::labs(title = "Active learning accuracy",
+                  subtitle = paste(
+                      "Amazonia samples",
+                      paste(n_experiments, " runs"),
+                      paste(n_iterations, " iterations"),
+                      sep = " - "
+                  )) +
+    ggplot2::xlab("Number of training samples") +
+    ggplot2::ylab("Mean overall accuracy")
+
+ggplot2::ggsave(
+    plot = plot_mean_overall,
+    path = results_dir,
+    filename = "compare_deforestation_mean_overall.png",
+    device = "png",
+    width = 297,
+    height = 210,
+    units = "mm")
+
+plot_mean_pu <- plot_data %>%
+    dplyr::filter(metric %in% c("f1", "prod_acc", "user_acc")) %>%
+    dplyr::group_by(type, n_training, metric, class) %>%
+    dplyr::summarize(mean_acc = mean(accuracy)) %>%
+    dplyr::ungroup() %>%
+    ggplot2::ggplot() +
+    ggplot2::geom_path(ggplot2::aes(x = n_training,
+                                    y = mean_acc,
+                                    group = class,
+                                    color = class)) +
+    ggplot2::facet_grid(cols = dplyr::vars(type),
+                        rows = dplyr::vars(metric)) +
+    ggplot2::labs(title = "Active learning accuracy",
+                  subtitle = paste(
+                      "Amazonia samples",
+                      paste(n_experiments, " runs"),
+                      paste(n_iterations, " iterations"),
+                      sep = " - "
+                  )) +
+    ggplot2::xlab("Number of training samples") +
+    ggplot2::ylab("Mean accuracy")
+
+ggplot2::ggsave(
+    plot = plot_mean_pu,
+    path = results_dir,
+    filename = "compare_deforestation_mean_pu.png",
     device = "png",
     width = 297,
     height = 210,
