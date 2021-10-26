@@ -1,10 +1,11 @@
 library(activelearning)
 library(dplyr)
+library(dtwclust)
 library(caret)
 library(ggplot2)
 library(sits)
 
-
+#TODO: Run using dtw distance.
 
 #---- Load code & data ----
 
@@ -12,13 +13,13 @@ library(sits)
 source(system.file("extdata", "compare_methods", "compare_al_methods.R",
                    package = "activelearning"))
 
+samples_file <- system.file("extdata", "samples", "deforestation.rds",
+                            package = "activelearning")
+stopifnot(file.exists(samples_file))
+
 # Get samples of deforestation.
-samples_tb <- system.file("extdata", "samples", "deforestation.rds",
-                          package = "activelearning") %>%
+samples_tb <-  samples_file %>%
     readRDS() %>%
-    # dplyr::group_by(label) %>%
-    # dplyr::slice_sample(prop = 0.2) %>%
-    # dplyr::ungroup() %>%
     magrittr::set_class(class(sits::cerrado_2classes))
 stopifnot(nrow(samples_tb) > 0)
 
@@ -37,7 +38,7 @@ sits_method <- sits::sits_xgboost(verbose = FALSE)
 n_labelled   <- 3
 
 # Number of labels to be selected on each iteration.
-n_samples    <- length(unique(samples_tb$label)) * 3
+n_samples    <- length(unique(samples_tb$label)) * n_labelled
 
 # Number of consecutive iterations.
 n_iterations <- 30
@@ -48,27 +49,6 @@ n_experiments <- 30
 
 
 #---- Run experiment ----
-
-res_no_al <- lapply(
-    seq_len(n_experiments),
-    FUN = function(x,
-                   samples_tb,
-                   sits_method,
-                   n_iterations,
-                   n_samples) {
-        experiment(
-            start_samples_tb = start_sample_set(samples_tb = samples_tb,
-                                                n_samples = n_samples),
-            sits_method = sits_method,
-            n_iterations = n_iterations,
-            n_samples = n_samples,
-            f_new_samples = new_samples_no_al
-        )},
-    samples_tb = samples_tb,
-    sits_method = sits_method,
-    n_iterations = n_iterations,
-    n_samples = n_samples
-)
 
 res_egal <- lapply(
     seq_len(n_experiments),
@@ -83,7 +63,30 @@ res_egal <- lapply(
             sits_method = sits_method,
             n_iterations = n_iterations,
             n_samples = n_samples,
-            f_new_samples = new_samples_egal
+            f_new_samples = new_samples_egal,
+            sim_method = "dtw_basic"
+        )},
+    samples_tb = samples_tb,
+    sits_method = sits_method,
+    n_iterations = n_iterations,
+    n_samples = n_samples
+)
+
+res_no_al <- lapply(
+    seq_len(n_experiments),
+    FUN = function(x,
+                   samples_tb,
+                   sits_method,
+                   n_iterations,
+                   n_samples) {
+        experiment(
+            start_samples_tb = start_sample_set(samples_tb = samples_tb,
+                                                n_samples = n_samples),
+            sits_method = sits_method,
+            n_iterations = n_iterations,
+            n_samples = n_samples,
+            f_new_samples = new_samples_no_al,
+            sim_method = "dtw_basic"
         )},
     samples_tb = samples_tb,
     sits_method = sits_method,
