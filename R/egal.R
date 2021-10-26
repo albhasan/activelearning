@@ -40,6 +40,7 @@
 #'                        ranks samples based on their density and diversity.
 #'                        Those samples with highest EGAL should be selected
 #'                        first for labeling.
+#'
 #' @export
 #'
 #' @importFrom rlang .data
