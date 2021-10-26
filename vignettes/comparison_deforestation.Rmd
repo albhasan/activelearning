@@ -25,8 +25,9 @@ library(ggplot2)
 
 # Set up
 # Load data from results.
-results_lst <- system.file("extdata", "compare_methods_results", "results.rds",
-                            package = "activelearning") %>% 
+results_lst <- system.file("extdata", "compare_methods_results_egal_dtw", 
+                           "results.rds",
+                           package = "activelearning") %>% 
   readRDS()
 
 acc_no_al <- results_lst %>%
