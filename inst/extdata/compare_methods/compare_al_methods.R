@@ -26,7 +26,8 @@ experiment <- function(start_samples_tb, sits_method, n_iterations, n_samples,
     if (i == n_iterations)
       break()
     new_sample_ids <- f_new_samples(my_samples = my_samples,
-                                    n_samples = n_samples)
+                                    n_samples = n_samples,
+                                    ...)
     my_samples <- my_samples %>%
       dplyr::mutate(label = dplyr::if_else(sample_id %in% new_sample_ids,
                                            oracle_label,
@@ -76,9 +77,9 @@ get_training_samples <- function(my_samples) {
 #' @param my_samples A sits tibble.
 #' @param n_samplse  An length-one integer. The number of new samples.
 #' @return           An integer.
-new_samples_egal <- function(my_samples, n_samples) {
-  my_samples %>%
-    al_egal() %>%
+new_samples_egal <- function(my_samples, n_samples,...) {
+    al_egal(samples_tb = my_samples,
+            sim_method = sim_method) %>%
     dplyr::slice_max(egal,
                      n = n_samples,
                      with_ties = FALSE) %>%
