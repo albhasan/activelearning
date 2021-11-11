@@ -27,8 +27,9 @@
 #' @param mode            A character telling if the functin runs on either the
 #'                        "active_learning" or "semi_supervised_learning" mode.
 #' @return                A sits tibble with either the samples to be sent to
-#'                        the oracle (mode "semi_supervised_learning", column
-#                         s2 == 1) or the label column updated.
+#'                        the oracle or the label column updated. When the mode
+#'                        is active learning, the samples to be sent to the
+#'                        oracle have a value of 1 in the column s2.
 #'
 #' @importFrom rlang .data
 #'

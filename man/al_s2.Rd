@@ -27,7 +27,9 @@ samples.}
 }
 \value{
 \preformatted{           A sits tibble with either the samples to be sent to
-                   the oracle (mode "semi_supervised_learning", column
+                   the oracle or the label column updated. When the mode
+                   is active learning, the samples to be sent to the
+                   oracle have a value of 1 in the column s2.
 }
 }
 \description{
