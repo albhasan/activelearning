@@ -1,3 +1,6 @@
+# Set of functions for comparing Active Learning methods.
+
+
 #' Run an experiment.
 #'
 #' @param samples_tb    A sits tibble.
@@ -47,7 +50,6 @@ experiment <- function(start_samples_tb, sits_method, n_iterations, n_samples,
 #' @param samples_tb A sits tibble.
 #' @return           A sits tibble.
 get_testing_samples <- function(my_samples) {
-  #my_samples %>% count(label) %>% print(n = Inf)
   my_samples %>%
     dplyr::filter(is.na(label)) %>%
     ensurer::ensure_that(nrow(.) > 0,
@@ -62,7 +64,6 @@ get_testing_samples <- function(my_samples) {
 #' @param samples_tb A sits tibble.
 #' @return           A sits tibble.
 get_training_samples <- function(my_samples) {
-
   my_samples %>%
     dplyr::filter(!is.na(label)) %>%
     ensurer::ensure_that(nrow(.) > 0,
@@ -89,8 +90,8 @@ new_samples_egal <- function(my_samples, n_samples,...) {
 
 
 
-#' Get the sample ids of the samples for the next iteration using random sampling
-#' without Active Learning.
+#' Get the sample ids of the samples for the next iteration using random
+#' sampling without Active Learning.
 #'
 #' @param my_samples A sits tibble.
 #' @param n_samplse  An length-one integer. The number of new samples.
@@ -195,8 +196,6 @@ start_sample_set <- function(samples_tb, n_samples) {
 
 
 #---- Hidden ----
-
-
 
 #' Get accuracy metrics from a caret's confusion matrix.
 #'
