@@ -50,6 +50,29 @@ n_experiments <- 30
 
 #---- Run experiment ----
 
+# No Active Learning.
+res_no_al <- lapply(
+    seq_len(n_experiments),
+    FUN = function(x,
+                   samples_tb,
+                   sits_method,
+                   n_iterations,
+                   n_samples) {
+        experiment(
+            start_samples_tb = start_sample_set(samples_tb = samples_tb,
+                                                n_samples = n_samples),
+            sits_method = sits_method,
+            n_iterations = n_iterations,
+            n_samples = n_samples,
+            f_new_samples = new_samples_no_al
+        )},
+    samples_tb = samples_tb,
+    sits_method = sits_method,
+    n_iterations = n_iterations,
+    n_samples = n_samples
+)
+
+# EGAL.
 res_egal <- lapply(
     seq_len(n_experiments),
     FUN = function(x,
@@ -72,28 +95,7 @@ res_egal <- lapply(
     n_samples = n_samples
 )
 
-res_no_al <- lapply(
-    seq_len(n_experiments),
-    FUN = function(x,
-                   samples_tb,
-                   sits_method,
-                   n_iterations,
-                   n_samples) {
-        experiment(
-            start_samples_tb = start_sample_set(samples_tb = samples_tb,
-                                                n_samples = n_samples),
-            sits_method = sits_method,
-            n_iterations = n_iterations,
-            n_samples = n_samples,
-            f_new_samples = new_samples_no_al,
-            sim_method = "dtw_basic"
-        )},
-    samples_tb = samples_tb,
-    sits_method = sits_method,
-    n_iterations = n_iterations,
-    n_samples = n_samples
-)
-
+# Active learning using random sampling (wrapper method).
 res_al_rs <- lapply(
     seq_len(n_experiments),
     FUN = function(x,
