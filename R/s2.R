@@ -147,8 +147,15 @@ al_s2 <- function(samples_tb,
         # are the training samples, and 0 are the remaining samples.
         samples_tb <- rbind(s_labelled_tb, s_unlabelled_tb)
         samples_tb["s2"] <- 0.0
-        samples_tb[["s2"]][midpoints] <- 1.0
+        samples_tb[["s2"]][unique(midpoints)] <- 1.0
         samples_tb[["s2"]][1:nrow(s_labelled_tb)] <- NA_real_
+
+        if (length(midpoints) == 0)
+            warning("S2: No samples suggested for the oracle.")
+        if (sum(samples_tb[["s2"]], na.rm = TRUE) == 0 &&
+            length(midpoints) > 0)
+            warning(paste("S2: No samples suggested for the oracle. Those",
+                          "found are already labelled."))
 
         return(samples_tb)
    }
