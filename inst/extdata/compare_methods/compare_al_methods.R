@@ -76,7 +76,7 @@ get_training_samples <- function(my_samples) {
 #' Get the sample ids of the samples for the next iteration using EGAL.
 #'
 #' @param my_samples A sits tibble.
-#' @param n_samplse  An length-one integer. The number of new samples.
+#' @param n_samples  A length-one integer. The number of new samples.
 #' @return           An integer.
 new_samples_egal <- function(my_samples, n_samples,...) {
     al_egal(samples_tb = my_samples,
@@ -84,6 +84,23 @@ new_samples_egal <- function(my_samples, n_samples,...) {
     dplyr::slice_max(egal,
                      n = n_samples,
                      with_ties = FALSE) %>%
+    dplyr::pull(sample_id) %>%
+    return()
+}
+
+
+
+#' Get the sample ids of the samples for the next iteration using S2.
+#'
+#' @param my_samples A sits tibble.
+#' @param n_samples  A length-one integer. The number of new samples (ignored).
+#' @return           An integer.
+new_samples_s2 <- function(my_samples, n_samples,...) {
+    al_s2(samples_tb = my_samples,
+          sim_method = sim_method,
+          closest_n = closest_n,
+          mode = mode) %>%
+    dplyr::filter(s2 == 1) %>%
     dplyr::pull(sample_id) %>%
     return()
 }
